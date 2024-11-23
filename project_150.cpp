@@ -51,17 +51,7 @@ void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
     SDL_Quit();
 }
 
-void background(SDL_Renderer* renderer){
-    for(int i =0;i<height;i++){
-        Uint8 r = 72 + (i * 100 / height); 
-        Uint8 g = 97 + (i * 50 / height);    
-        Uint8 b = 150 + (i * 30 / height);   
-        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-        SDL_RenderDrawLine(renderer, 0, i, width, i);
-    }
-}
-
-void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int fontSize, SDL_Color color, bool center = false) {
+ void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int fontSize, SDL_Color color, bool center = false) {
     TTF_Font* font = TTF_OpenFont("8bitOperatorPlus8-Bold.ttf", fontSize);
     if (!font) {
         printf("Failed to load font: %s\n", TTF_GetError());
@@ -85,6 +75,30 @@ void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int 
     TTF_CloseFont(font);
 }
 
+void scorebar(SDL_Renderer* renderer, int score){
+    int scorebarheight = 40;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 0); 
+    SDL_Rect scoreBarRect = {0, height - scorebarheight, width, scorebarheight};
+    SDL_RenderFillRect(renderer, &scoreBarRect);
+
+    SDL_Color textColor = {0, 0, 0, 255}; 
+    char scoreText[32];
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
+    displayText(renderer, scoreText, 10, height - scorebarheight / 2, 24, textColor, false); 
+
+}
+
+void background(SDL_Renderer* renderer, int scoreBarHeight){
+    for(int i =0;i<height;i++){
+        Uint8 r = 72 + (i * 100 / height); 
+        Uint8 g = 97 + (i * 50 / height);    
+        Uint8 b = 150 + (i * 30 / height);   
+        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+        SDL_RenderDrawLine(renderer, 0, i, width, i);
+    }
+}
+
+
 void gameover(SDL_Renderer* renderer, int score) {
     SDL_SetRenderDrawColor(renderer, 105, 105, 105, 255); 
     SDL_RenderClear(renderer);
@@ -100,6 +114,22 @@ void gameover(SDL_Renderer* renderer, int score) {
     displayText(renderer, "Press 'SPACE' to Restart or 'Q' to Quit", width / 2, height / 3 + 120, 24, textColor, true);
 
     SDL_RenderPresent(renderer);
+}
+
+void wall(SDL_Renderer* renderer, int depth, SDL_Color color){
+     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+     //upper wall
+     SDL_Rect topWall = {0, 0, width, depth};
+     SDL_RenderFillRect(renderer, &topWall);
+     // lower wall
+     SDL_Rect bottomWall = {0, height - depth, width, depth};
+    SDL_RenderFillRect(renderer, &bottomWall);
+    // Left wall
+    SDL_Rect leftWall = {0, 0, depth, height};
+    SDL_RenderFillRect(renderer, &leftWall);
+    // Right wall
+    SDL_Rect rightWall = {width - depth, 0, depth, height};
+    SDL_RenderFillRect(renderer, &rightWall);
 }
 
 void rectngl(SDL_Renderer* renderer ,int x, int y , int wd ,int hg, SDL_Color color){
@@ -161,9 +191,12 @@ bool selfcollision(Snake* snake){
     return 0;
 }
 
-bool wallcollision(Snake* snake){
+bool wallcollision(Snake* snake, int depth) {
+    int headx = snake->sgmnts[0].x;
+    int heady = snake->sgmnts[0].y;
 
-    return snake->sgmnts[0].x<0 || snake->sgmnts[0].x >= width/ts || snake->sgmnts[0].y<0 || snake->sgmnts[0].y >= height/ts;
+    return headx < depth / ts || headx >= (width - depth) / ts ||
+           heady < depth / ts || heady >= (height - depth) / ts;
 }
 
 void Sfood(point* food){
@@ -226,6 +259,9 @@ int main(int argc, char* argv[]) {
     int score = 0, foodCounter = 0;
     Uint32 bonusTime = 0;
 
+    int depth = 10;  
+    SDL_Color wallColor = {0, 0, 0, 255};  
+
     reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
 
     while (running) {
@@ -237,7 +273,7 @@ int main(int argc, char* argv[]) {
 
             movingsnk(&snake);
 
-            if (wallcollision(&snake) || selfcollision(&snake)) {
+            if (wallcollision(&snake,depth) || selfcollision(&snake)) {
                 break; 
             }
 
@@ -264,7 +300,9 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-             background(renderer);
+            int scorebarheight = 40;
+            background(renderer, scorebarheight);
+            wall(renderer, depth, wallColor);
 
             SDL_Color snakeColor = {0, 255, 0, 255};
             for (int i = 0; i < snake.l; i++) {
@@ -280,6 +318,7 @@ int main(int argc, char* argv[]) {
                 rectngl(renderer, bonus.x * ts, bonus.y * ts, ts, ts, bonusColor);
             }
 
+            scorebar(renderer, score);
             SDL_RenderPresent(renderer);
             SDL_Delay(100);
         }
