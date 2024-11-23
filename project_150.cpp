@@ -1,44 +1,97 @@
-#include<bits/stdc++.h>
-#include<SDL2/SDL.h>
-#include<time.h>
+#include <bits/stdc++.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
-#define w 720
-#define h 720
+#define width 720
+#define height 720
 #define ts 20
 #define ml 200
 
-typedef struct{
-    int x,y;
-}point;
+typedef struct {
+    int x, y;
+} point;
 
-typedef struct{
+typedef struct {
     point sgmnts[ml];
-    int l ,dx,dy;
-}Snake;
+    int l, dx, dy;
+} Snake;
 
-bool init(SDL_Window** window ,SDL_Renderer** renderer){
-
-    if(SDL_Init(SDL_INIT_VIDEO) != 0){
-        printf("Fail To Initialize:%s",SDL_GetError());
+bool init(SDL_Window** window, SDL_Renderer** renderer) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        printf("Fail To Initialize: %s\n", SDL_GetError());
+        return 0;
+    }
+    if (TTF_Init() == -1) {
+        printf("Fail To Initialize TTF: %s\n", TTF_GetError());
         return 0;
     }
 
-    *window = SDL_CreateWindow("SNAKE GAME" ,SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED, w , h , SDL_WINDOW_SHOWN);
-    
-    if(*window==NULL){
-        printf("Failed window:%s",SDL_GetError());
+    *window = SDL_CreateWindow("SNAKE GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+
+    if (*window == NULL) {
+        printf("Failed window: %s\n", SDL_GetError());
         return 0;
     }
 
-    *renderer =SDL_CreateRenderer(*window ,-1 ,SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    if(*renderer == NULL){
-        printf("Failed Renderer: %s",SDL_GetError());
+    if (*renderer == NULL) {
+        printf("Failed Renderer: %s\n", SDL_GetError());
         return 0;
     }
 
     return 1;
 }
+
+void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    TTF_Quit();
+    SDL_Quit();
+}
+
+void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int fontSize, SDL_Color color, bool center = false) {
+    TTF_Font* font = TTF_OpenFont("8bitOperatorPlus8-Bold.ttf", fontSize);
+    if (!font) {
+        printf("Failed to load font: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect dstRect = {x, y, surface->w, surface->h};
+
+    if (center) {
+        dstRect.x = x - surface->w / 2;
+        dstRect.y = y - surface->h / 2;
+    }
+
+    SDL_RenderCopy(renderer, texture, NULL, &dstRect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
+}
+
+void gameover(SDL_Renderer* renderer, int score) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black background
+    SDL_RenderClear(renderer);
+
+    SDL_Color textColor = {255, 255, 255, 255}; 
+
+    displayText(renderer, "GAME OVER", width / 2, height / 3, 48, textColor, true);
+
+    char scoreMessage[64];
+    snprintf(scoreMessage, sizeof(scoreMessage), "Your Score: %d", score);
+    displayText(renderer, scoreMessage, width/ 2, height / 3 + 60, 36, textColor, true);
+
+    displayText(renderer, "Press 'SPACE' to Restart or 'Q' to Quit", width / 2, height / 3 + 120, 24, textColor, true);
+
+    SDL_RenderPresent(renderer);
+}
+
+
 
 void rectngl(SDL_Renderer* renderer ,int x, int y , int wd ,int hg, SDL_Color color){
 
@@ -59,6 +112,20 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
             }
         }
     }
+}
+
+void reset(Snake *snake, point *food, point *bonus, int *score, int *foodCounter, Uint32 *bonusTime, bool *running){
+    snake->l=1;
+    snake->sgmnts[0] = {width / ts / 2, height / ts / 2};
+    snake->dx = 1;
+    snake->dy = 0;
+
+    *food = {rand() % (width / ts), rand() % (height / ts)};
+    *bonus = {-1, -1};
+    *score = 0;
+    *foodCounter = 0;
+    *bonusTime = 0;
+    *running = 1;
 }
 
 void movingsnk(Snake* snake){
@@ -87,135 +154,143 @@ bool selfcollision(Snake* snake){
 
 bool wallcollision(Snake* snake){
 
-    return snake->sgmnts[0].x<0 || snake->sgmnts[0].x >= w/ts || snake->sgmnts[0].y<0 || snake->sgmnts[0].y >= h/ts;
+    return snake->sgmnts[0].x<0 || snake->sgmnts[0].x >= width/ts || snake->sgmnts[0].y<0 || snake->sgmnts[0].y >= height/ts;
 }
 
 void Sfood(point* food){
 
-    food->x = rand() % (w/ts);
-    food->y=rand() % (h/ts);
+    food->x = rand() % (width/ts);
+    food->y=rand() % (height/ts);
 }
 
 void bonus(point* bonus){
 
-    bonus->x =rand() % (w/ts);
-    bonus->y =rand() % (h/ts);
+    bonus->x =rand() % (width/ts);
+    bonus->y =rand() % (height/ts);
 }
 
-int main( int argc ,char* argv[]){
 
-    SDL_Window* window =NULL;
+void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point* bonus, int* score, int* foodCounter, 
+                        Uint32* bonusTime, SDL_Window* window, SDL_Renderer* renderer) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            *run = false;
+        } else if (event.type == SDL_KEYDOWN) {
+            if (event.key.keysym.sym == SDLK_UP && snake->dy == 0) {
+                snake->dx = 0;
+                snake->dy = -1;
+            } else if (event.key.keysym.sym == SDLK_DOWN && snake->dy == 0) {
+                snake->dx = 0;
+                snake->dy = 1;
+            } else if (event.key.keysym.sym == SDLK_LEFT && snake->dx == 0) {
+                snake->dx = -1;
+                snake->dy = 0;
+            } else if (event.key.keysym.sym == SDLK_RIGHT && snake->dx == 0) {
+                snake->dx = 1;
+                snake->dy = 0;
+            } else if (event.key.keysym.sym == SDLK_SPACE) {
+                *restart = true; 
+                *run = false;   
+            } else if (event.key.keysym.sym == SDLK_q) {
+                *run = false;     
+            }
+        }
+    }
+}
+
+
+int main(int argc, char* argv[]) {
+    SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
 
-    if(!init(&window, &renderer)){
+    if (!init(&window, &renderer)) {
         return 1;
     }
 
     srand(time(NULL));
+    bool running = true;
+    bool restart = false;
 
     Snake snake;
-    snake.l=1;
-    snake.sgmnts[0]={w/ts/2 ,h/ts/2};
-    snake.dx=1;
-    snake.dy=0;
+    point food, bonus;
+    int score = 0, foodCounter = 0;
+    Uint32 bonusTime = 0;
 
-    point food ,bonus ={-1 ,-1};
-    Sfood(&food);
+    reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
 
-    int score=0;
-    int foodcounter=0;
+    while (running) {
+        while (running) {
+            Uint32 currentTime = SDL_GetTicks();
 
-    Uint32 bonustime=0;
-    int bonusvalu=10;
+            
+            directionhandle(&running, &restart, &snake, &food, &bonus, &score, &foodCounter, &bonusTime, window, renderer);
+
+            movingsnk(&snake);
+
+            if (wallcollision(&snake) || selfcollision(&snake)) {
+                break; 
+            }
+
+            if (collision(snake.sgmnts[0], food)) {
+                snake.l++;
+                score += 2;
+                foodCounter++;
+                Sfood(&food);
+
+                if (foodCounter == 3) {
+                    Sfood(&bonus);
+                    bonusTime = currentTime;
+                }
+            }
+
+            // Bonus collision
+            if (bonus.x != -1) {
+                if (currentTime - bonusTime <= 5000) {
+                    if (collision(snake.sgmnts[0], bonus)) {
+                        score += 5;
+                        bonus = {-1, -1};
+                    }
+                } else {
+                    bonus = {-1, -1};
+                }
+            }
+
+            SDL_SetRenderDrawColor(renderer, 72, 97, 150, 255); 
+            SDL_RenderClear(renderer);
+
+            SDL_Color snakeColor = {0, 255, 0, 255};
+            for (int i = 0; i < snake.l; i++) {
+                int radius = (i == 0) ? ts / 2 : ts / 2 - (i * 2 / snake.l);
+                circle(renderer, snake.sgmnts[i].x * ts + ts / 2, snake.sgmnts[i].y * ts + ts / 2, radius, snakeColor);
+            }
+
+            SDL_Color foodColor = {255, 0, 0, 255};
+            rectngl(renderer, food.x * ts, food.y * ts, ts, ts, foodColor);
+
+            if (bonus.x != -1) {
+                SDL_Color bonusColor = {255, 255, 0, 255};
+                rectngl(renderer, bonus.x * ts, bonus.y * ts, ts, ts, bonusColor);
+            }
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(100);
+        }
+
+        gameover(renderer, score);
+
+        while (!restart && running) {
+            directionhandle(&running, &restart, &snake, &food, &bonus, &score, &foodCounter, &bonusTime, window, renderer);
+        }
+
+      
+        if (restart) {
+            reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
+            restart = false;
+        }
+    }
+
     
-    bool run=1;
-    SDL_Event event;
-
-    while(run){
-        Uint32 currenttime=SDL_GetTicks();
-
-        while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            run = 0;
-        } else if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.sym == SDLK_UP && snake.dy == 0) {
-                snake.dx = 0;
-                snake.dy = -1;
-            } else if (event.key.keysym.sym == SDLK_DOWN && snake.dy == 0) {
-                snake.dx = 0;
-                snake.dy = 1;
-            } else if (event.key.keysym.sym == SDLK_LEFT && snake.dx == 0) {
-                snake.dx = -1;
-                snake.dy = 0;
-            } else if (event.key.keysym.sym == SDLK_RIGHT && snake.dx == 0) {
-                snake.dx = 1;
-                snake.dy = 0;
-            }
-        }
-    }
-        movingsnk(&snake);
-
-    if (wallcollision(&snake) || selfcollision(&snake)) {
-        printf("GAME OVER \n");
-        printf("YOUR SCORE : %d\n", score);
-        break;
-    }
-
-    if (collision(snake.sgmnts[0], food)) {
-        snake.l++;
-        score += 2;
-        foodcounter++;
-        Sfood(&food);
-
-        if (foodcounter == 3) {
-            Sfood(&bonus);
-            bonustime = currenttime;
-            bonusvalu = 5;
-        }
-    }
-
-    if (bonus.x != -1) {
-        if (currenttime - bonustime <= 5000) {
-            if (collision(snake.sgmnts[0], bonus)) {
-                score += bonusvalu;
-                bonus.x = -1;
-                bonus.y = -1;
-            }
-        } else {
-            bonus.x = -1;
-            bonus.y = -1;
-        }
-    }
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-
-    SDL_Color snakeColor = {0, 255, 0, 255};
-    for (int i = 0; i < snake.l; i++) {
-        int radi= (i == 0) ? ts / 2 : ts / 2 - (i * 2 / snake.l);
-        circle(renderer, snake.sgmnts[i].x * ts + ts / 2,snake.sgmnts[i].y * ts + ts / 2, radi, snakeColor);
-    }
-
-    SDL_Color foodColor = {255, 0, 0, 255};
-    rectngl(renderer, food.x * ts, food.y * ts, ts, ts, foodColor);
-
-    if (bonus.x != -1) {
-        SDL_Color bonusColor = {255, 255, 0, 255};
-        rectngl(renderer, bonus.x * ts, bonus.y * ts, ts, ts, bonusColor);
-    }
-
-    SDL_RenderPresent(renderer);
-    SDL_Delay(100);
-}
-  
-    SDL_DestroyRenderer(renderer);
-
-    SDL_DestroyWindow(window);
-
-    SDL_Quit();
-
+    killwindow(window, renderer);
     return 0;
 }
-
-
-

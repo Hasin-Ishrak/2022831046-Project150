@@ -17,7 +17,7 @@ old_library='libSDL2_ttf.a'
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -lusp10 -lrpcrt4 -L/usr/local/i686-w64-mingw32/lib /usr/local/i686-w64-mingw32/lib/libSDL2.la -ldinput8 -ldxguid -ldxerr8 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lsetupapi -lversion -luuid /opt/homebrew/Cellar/mingw-w64/10.0.0_4/toolchain-i686/i686-w64-mingw32/lib/../lib/libstdc++.la'
+dependency_libs=' -lusp10 -lrpcrt4 -L/usr/local/x86_64-w64-mingw32/lib /usr/local/x86_64-w64-mingw32/lib/libSDL2.la -ldinput8 -ldxguid -ldxerr8 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lsetupapi -lversion -luuid /opt/homebrew/Cellar/mingw-w64/10.0.0_4/toolchain-x86_64/x86_64-w64-mingw32/lib/../lib/libstdc++.la'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/Users/valve/release/SDL2_ttf/SDL2_ttf-2.22.0/i686-w64-mingw32/lib'
+libdir='/Users/valve/release/SDL2_ttf/SDL2_ttf-2.22.0/x86_64-w64-mingw32/lib'
