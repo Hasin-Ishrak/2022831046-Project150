@@ -7,6 +7,15 @@
 #define ts 20
 #define ml 200
 
+typedef struct{
+    int x,y;
+}point;
+
+typedef struct{
+    point sgmnts[ml];
+    int l ,dx,dy;
+}Snake;
+
 bool init(SDL_Window** window ,SDL_Renderer** renderer){
 
     if(SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -31,21 +40,25 @@ bool init(SDL_Window** window ,SDL_Renderer** renderer){
     return 1;
 }
 
-typedef struct{
-    int x,y;
-}point;
-
-typedef struct{
-    point sgmnts[ml];
-    int l ,dx,dy;
-}Snake;
-
-
 void rectngl(SDL_Renderer* renderer ,int x, int y , int wd ,int hg, SDL_Color color){
 
   SDL_SetRenderDrawColor (renderer,color.r ,color.g ,color.b ,color.a );
   SDL_Rect rect ={x ,y,wd,hg,};
   SDL_RenderFillRect(renderer ,&rect);
+}
+
+void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    for(int i=0;i<radi*2;i++){
+        for(int j=0;j<radi*2;j++){
+            int  dx=radi-i;
+            int dy=radi-j;
+            if((dx*dx +dy*dy)<=(radi*radi)){
+                SDL_RenderDrawPoint(renderer,xx+dx,yy+dy);
+            }
+        }
+    }
 }
 
 void movingsnk(Snake* snake){
@@ -179,7 +192,8 @@ int main( int argc ,char* argv[]){
 
     SDL_Color snakeColor = {0, 255, 0, 255};
     for (int i = 0; i < snake.l; i++) {
-        rectngl(renderer, snake.sgmnts[i].x * ts, snake.sgmnts[i].y * ts, ts, ts, snakeColor);
+        int radi= (i == 0) ? ts / 2 : ts / 2 - (i * 2 / snake.l);
+        circle(renderer, snake.sgmnts[i].x * ts + ts / 2,snake.sgmnts[i].y * ts + ts / 2, radi, snakeColor);
     }
 
     SDL_Color foodColor = {255, 0, 0, 255};
