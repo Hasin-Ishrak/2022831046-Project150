@@ -44,10 +44,21 @@ bool init(SDL_Window** window, SDL_Renderer** renderer) {
 }
 
 void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
     SDL_Quit();
+}
+
+void background(SDL_Renderer* renderer){
+    for(int i =0;i<height;i++){
+        Uint8 r = 72 + (i * 100 / height); 
+        Uint8 g = 97 + (i * 50 / height);    
+        Uint8 b = 150 + (i * 30 / height);   
+        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+        SDL_RenderDrawLine(renderer, 0, i, width, i);
+    }
 }
 
 void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int fontSize, SDL_Color color, bool center = false) {
@@ -75,7 +86,7 @@ void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int 
 }
 
 void gameover(SDL_Renderer* renderer, int score) {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black background
+    SDL_SetRenderDrawColor(renderer, 105, 105, 105, 255); 
     SDL_RenderClear(renderer);
 
     SDL_Color textColor = {255, 255, 255, 255}; 
@@ -90,8 +101,6 @@ void gameover(SDL_Renderer* renderer, int score) {
 
     SDL_RenderPresent(renderer);
 }
-
-
 
 void rectngl(SDL_Renderer* renderer ,int x, int y , int wd ,int hg, SDL_Color color){
 
@@ -238,13 +247,12 @@ int main(int argc, char* argv[]) {
                 foodCounter++;
                 Sfood(&food);
 
-                if (foodCounter == 3) {
+                if (foodCounter ==3 || foodCounter %3==0) {
                     Sfood(&bonus);
                     bonusTime = currentTime;
                 }
             }
 
-            // Bonus collision
             if (bonus.x != -1) {
                 if (currentTime - bonusTime <= 5000) {
                     if (collision(snake.sgmnts[0], bonus)) {
@@ -256,8 +264,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            SDL_SetRenderDrawColor(renderer, 72, 97, 150, 255); 
-            SDL_RenderClear(renderer);
+             background(renderer);
 
             SDL_Color snakeColor = {0, 255, 0, 255};
             for (int i = 0; i < snake.l; i++) {
