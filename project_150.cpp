@@ -4,8 +4,8 @@
 
 #define width 720
 #define height 720
-#define ts 20
-#define ml 200
+#define ts 25
+#define ml 225
 
 typedef struct {
     int x, y;
@@ -17,22 +17,24 @@ typedef struct {
 } Snake;
 
 bool init(SDL_Window** window, SDL_Renderer** renderer) {
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("Fail To Initialize: %s\n", SDL_GetError());
         return 0;
     }
+    // to initialize ttf
     if (TTF_Init() == -1) {
         printf("Fail To Initialize TTF: %s\n", TTF_GetError());
         return 0;
     }
-
-    *window = SDL_CreateWindow("SNAKE GAME", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+    //window creation
+    *window = SDL_CreateWindow("The Serpent's Path", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
 
     if (*window == NULL) {
         printf("Failed window: %s\n", SDL_GetError());
         return 0;
     }
-
+     // to create snake,food,graphics
     *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     if (*renderer == NULL) {
@@ -42,7 +44,7 @@ bool init(SDL_Window** window, SDL_Renderer** renderer) {
 
     return 1;
 }
-
+ // destroy render ,ttf,window and  quit sdl
 void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
 
     SDL_DestroyRenderer(renderer);
@@ -50,98 +52,106 @@ void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
     TTF_Quit();
     SDL_Quit();
 }
-
- void displayText(SDL_Renderer* renderer, const char* message, int x, int y, int fontSize, SDL_Color color, bool center = false) {
-    TTF_Font* font = TTF_OpenFont("8bitOperatorPlus8-Bold.ttf", fontSize);
+ // to display score and texts in the game
+ void displayText(SDL_Renderer* renderer,const char* message,int x,int y,int fontSize,SDL_Color color,bool center=0){
+    TTF_Font* font =TTF_OpenFont("8bitOperatorPlus8-Bold.ttf",fontSize);
     if (!font) {
         printf("Failed to load font: %s\n", TTF_GetError());
         return;
     }
+     // surface uses for raw pixel representation
+    SDL_Surface* surface=TTF_RenderText_Solid(font,message,color);
+    //convert the surface into texture
+    SDL_Texture* texture=SDL_CreateTextureFromSurface(renderer,surface);
 
-    SDL_Surface* surface = TTF_RenderText_Solid(font,message,color);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer,surface);
-
-    SDL_Rect dstRect = {x, y, surface->w, surface->h};
-
+    SDL_Rect dstRect= {x,y,surface->w,surface->h};
+    // define where will be the text
+    // x ,y axis and w ,h height and width which is calculated from the surface
+    //center ensures that is at center and half of w and half of h
     if (center) {
-        dstRect.x = x - surface->w/ 2;
-        dstRect.y = y - surface->h/ 2;
+        dstRect.x= x-surface->w/ 2;
+        dstRect.y= y-surface->h/ 2;
     }
 
     SDL_RenderCopy(renderer, texture, NULL, &dstRect);
-
+    // uses to frees the memory used
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
     TTF_CloseFont(font);
 }
-
+ // used to show current score
 void drawscore(SDL_Renderer* renderer, int score, int depth){
 
     SDL_Color textColor = {0, 0, 0, 255};
     char scoretxt[32];
+    //string for score and snprintf to handle overflow
     snprintf(scoretxt, sizeof(scoretxt), "Score: %d", score);
      
     int txtwidth =200; 
+    //centered the text horizontally by substractinh half of width
     int x=(width/2)-(txtwidth/2);
     int y=depth/2+7;
 
     displayText(renderer,scoretxt,x,y,25,textColor,0);
 }
-
+ // gradiant effect on the background
 void background(SDL_Renderer* renderer, int scoreBarHeight){
     for(int i =0;i<height;i++){
-        Uint8 r = 72 + (i * 100/height); 
-        Uint8 g = 97 + (i * 50/height);    
-        Uint8 b = 150 + (i * 30/height);   
-        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-        SDL_RenderDrawLine(renderer, 0, i, width, i);
+        //rgb increasing for effect and value controls the change of th color
+        Uint8 r =75+(i*100/height); 
+        Uint8 g =100+(i*50/height);    
+        Uint8 b =150+(i*30/height);   
+        SDL_SetRenderDrawColor(renderer,r,g,b,255);
+        SDL_RenderDrawLine(renderer,0,i,width, i);
     }
 }
 
-
+// to show game over at the last of the game
 void gameover(SDL_Renderer* renderer, int score) {
-    SDL_SetRenderDrawColor(renderer, 105, 105, 105, 255); 
+    SDL_SetRenderDrawColor(renderer,0,50,102, 255); 
     SDL_RenderClear(renderer);
 
     SDL_Color textColor = {255, 255, 255, 255}; 
-
-    displayText(renderer, "GAME OVER", width / 2, height / 3, 48, textColor, true);
+    //horizontally centered and one third down on the screen
+    displayText(renderer, "GAME OVER", width/2,height/3,48,textColor, 1);
 
     char scoreMessage[64];
     snprintf(scoreMessage, sizeof(scoreMessage), "Your Score: %d", score);
-    displayText(renderer, scoreMessage, width/ 2, height / 3 + 60, 36, textColor, true);
-
-    displayText(renderer, "Press 'SPACE' to Restart or 'Shift' to Quit", width / 2, height / 3 + 120, 24, textColor, true);
+    // horizontally centered and under the game over
+    displayText(renderer,scoreMessage, width/ 2,height/3 +60,35,textColor,1);
+    // to show ending message and centered the text 120 pixel below game over 
+    displayText(renderer,"Press 'SPACE' to Restart or 'Shift' to Quit",width/2,height/3+120, 25, textColor,1);
 
     SDL_RenderPresent(renderer);
 }
+ // draw four wall as boundary 
+void wall(SDL_Renderer* renderer,int depth,SDL_Color color){
+     SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
 
-void wall(SDL_Renderer* renderer, int depth, SDL_Color color){
-     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-     //upper wall
-     SDL_Rect topWall = {0, 0, width, depth};
-     SDL_RenderFillRect(renderer, &topWall);
-     // lower wall
-     SDL_Rect bottomWall = {0, height - depth, width, depth};
-    SDL_RenderFillRect(renderer, &bottomWall);
-    // Left wall
-    SDL_Rect leftWall = {0, 0, depth, height};
-    SDL_RenderFillRect(renderer, &leftWall);
-    // Right wall
-    SDL_Rect rightWall = {width - depth, 0, depth, height};
-    SDL_RenderFillRect(renderer, &rightWall);
+     SDL_Rect topWall={0,0,width,depth};
+     SDL_RenderFillRect(renderer,&topWall);
+
+    SDL_Rect bottomWall={0,height-depth,width,depth};
+    SDL_RenderFillRect(renderer,&bottomWall);
+    
+    SDL_Rect leftWall={0,0,depth,height};
+    SDL_RenderFillRect(renderer,&leftWall);
+    
+    SDL_Rect rightWall={width-depth,0,depth,height};
+    SDL_RenderFillRect(renderer,&rightWall);
 }
-
-void rectngl(SDL_Renderer* renderer ,int x, int y , int wd ,int hg, SDL_Color color){
+// for drawing filled rectangles for different purposes 
+void rectngl(SDL_Renderer* renderer,int x,int y,int wd,int hg,SDL_Color color){
 
   SDL_SetRenderDrawColor (renderer,color.r ,color.g ,color.b ,color.a );
-  SDL_Rect rect ={x ,y,wd,hg,};
-  SDL_RenderFillRect(renderer ,&rect);
+  SDL_Rect rect ={x,y,wd,hg,};
+  SDL_RenderFillRect(renderer,&rect);
 }
-
+//for filled circle 
 void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
 
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
+    // nested loop for circle draw and formula is x^2 + y^2 = r^2
     for(int i=0;i<radi*2;i++){
         for(int j=0;j<radi*2;j++){
             int  dx=radi-i;
@@ -152,49 +162,49 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
         }
     }
 }
-
+// creates static predifined rectangle blocks in the window 
 void obstacles(SDL_Renderer* renderer, SDL_Color color, int depth){
-
+    
     std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
     for(const auto& i:obs){
-        SDL_Rect rect = {i.x * ts, i.y * ts, ts, ts}; 
+        SDL_Rect rect = {i.x*ts,i.y*ts,ts,ts}; 
         SDL_RenderFillRect(renderer, &rect);
     }
 }
-
+// updates the snakes position after every movement of the snake
 void movingsnk(Snake* snake){
-
+    // moves every segments of the snake starting from the tail
     for(int i =snake->l-1; i>0; i--){
        snake->sgmnts[i]=snake->sgmnts[i-1];
     }
-
-    snake->sgmnts[0].x += snake->dx;
-    snake->sgmnts[0].y += snake->dy;
+    // update the head position of the snake
+    snake->sgmnts[0].x+=snake->dx;
+    snake->sgmnts[0].y+=snake->dy;
 }
-
+// this checks that two points are occupy the same grid or not for(food,wall,obstacle,self,bonus)
 bool collision(point a ,point b){
 
     return a.x == b.x && a.y == b.y ;
 }
-
+//checks if the snake bites it self or not
 bool selfcollision(Snake* snake){
-    for(int i =1; i<snake->l;i++){
+    for(int i =1;i<snake->l;i++){
         if(collision(snake->sgmnts[0],snake->sgmnts[i])){
             return 1;
         }
     }
     return 0;
 }
-
+// checks if the snake hits the wall or not 
 bool wallcollision(Snake* snake, int depth) {
-    int headx= snake->sgmnts[0].x;
-    int heady= snake->sgmnts[0].y;
-
+    int headx=snake->sgmnts[0].x;
+    int heady=snake->sgmnts[0].y;
+    // checks the head is less then or below the wall thickness or not
     return headx<depth/ts || headx>=(width-depth)/ts ||
            heady<depth/ts || heady>=(height-depth)/ts;
 }
-
+//checks if the snake hits any of the obstacles or not
 bool obscollision(Snake* snake){
 
     std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
