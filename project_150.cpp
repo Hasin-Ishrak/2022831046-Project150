@@ -58,14 +58,14 @@ void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
         return;
     }
 
-    SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Surface* surface = TTF_RenderText_Solid(font,message,color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer,surface);
 
     SDL_Rect dstRect = {x, y, surface->w, surface->h};
 
     if (center) {
-        dstRect.x = x - surface->w / 2;
-        dstRect.y = y - surface->h / 2;
+        dstRect.x = x - surface->w/ 2;
+        dstRect.y = y - surface->h/ 2;
     }
 
     SDL_RenderCopy(renderer, texture, NULL, &dstRect);
@@ -90,9 +90,9 @@ void drawscore(SDL_Renderer* renderer, int score, int depth){
 
 void background(SDL_Renderer* renderer, int scoreBarHeight){
     for(int i =0;i<height;i++){
-        Uint8 r = 72 + (i * 100 / height); 
-        Uint8 g = 97 + (i * 50 / height);    
-        Uint8 b = 150 + (i * 30 / height);   
+        Uint8 r = 72 + (i * 100/height); 
+        Uint8 g = 97 + (i * 50/height);    
+        Uint8 b = 150 + (i * 30/height);   
         SDL_SetRenderDrawColor(renderer, r, g, b, 255);
         SDL_RenderDrawLine(renderer, 0, i, width, i);
     }
@@ -153,6 +153,15 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
     }
 }
 
+void obstacles(SDL_Renderer* renderer, SDL_Color color, int depth){
+
+    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    for(const auto& i:obs){
+        SDL_Rect rect = {i.x * ts, i.y * ts, ts, ts}; 
+        SDL_RenderFillRect(renderer, &rect);
+    }
+}
 
 void movingsnk(Snake* snake){
 
@@ -182,8 +191,19 @@ bool wallcollision(Snake* snake, int depth) {
     int headx= snake->sgmnts[0].x;
     int heady= snake->sgmnts[0].y;
 
-    return headx< depth/ts || headx>=(width-depth)/ts ||
-           heady< depth/ts || heady>=(height-depth)/ts;
+    return headx<depth/ts || headx>=(width-depth)/ts ||
+           heady<depth/ts || heady>=(height-depth)/ts;
+}
+
+bool obscollision(Snake* snake){
+
+    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    for(const auto& i:obs){
+        if(collision(snake->sgmnts[0],i)){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 void generatefood(point* food, Snake* snake, int depth){
@@ -240,7 +260,7 @@ void generatebonus(point* bonus, Snake* snake, int depth){
 
 void reset(Snake *snake, point *food, point *bonus, int *score, int *foodCounter, Uint32 *bonusTime, bool *running){
     snake->l=1;
-    snake->sgmnts[0] = {width / ts / 2, height / ts / 2};
+    snake->sgmnts[0] = {width/ts/2, height/ts/2};
     snake->dx = 1;
     snake->dy = 0;
 
@@ -288,8 +308,8 @@ void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point*
 
 
 int main (int argc, char* argv[]) {
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
+    SDL_Window* window=NULL;
+    SDL_Renderer* renderer=NULL;
 
     if (!init(&window, &renderer)) {
         return 1;
@@ -300,12 +320,13 @@ int main (int argc, char* argv[]) {
     bool restart = false;
 
     Snake snake;
-    point food, bonus;
-    int score = 0, foodCounter = 0;
-    Uint32 bonusTime = 0;
+    point food,bonus;
+    int score=0, foodCounter=0;
+    Uint32 bonusTime= 0;
 
     int depth = 10;  
     SDL_Color wallColor = {0, 0, 0, 255};  
+    SDL_Color obstacleColor = {128, 0, 128, 255};
 
     reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
 
@@ -318,7 +339,7 @@ int main (int argc, char* argv[]) {
 
             movingsnk(&snake);
 
-            if (wallcollision(&snake,depth) || selfcollision(&snake)) {
+            if (wallcollision(&snake,depth) || selfcollision(&snake) || obscollision(&snake)) {
                 break; 
             }
 
@@ -349,10 +370,11 @@ int main (int argc, char* argv[]) {
 
             background(renderer, depth);
             wall(renderer, depth, wallColor);
+            obstacles(renderer, obstacleColor, depth);
 
             SDL_Color snakeColor = {0, 0, 102, 255};
             for (int i = 0; i < snake.l; i++) {
-                int radi = ts/2;
+                int radi = ts/2 +3;
                 if(i==0){
                     SDL_Color head={255,0,0,255};
                     circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y * ts+ts/2,radi,head);
@@ -364,11 +386,11 @@ int main (int argc, char* argv[]) {
             }
 
             SDL_Color foodColor = {255, 0, 0, 255};
-            circle(renderer, food.x * ts + ts / 2, food.y * ts + ts / 2, ts / 2, foodColor);
+            circle(renderer, food.x * ts + ts / 2, food.y * ts+ts/2,ts/2, foodColor);
 
             if (bonus.x != -1) {
                 SDL_Color bonusColor = {255, 255, 0, 255};
-                circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts + ts / 2, ts / 2,bonusColor);
+                circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts+ts/2,ts/2,bonusColor);
             }
 
             drawscore(renderer, score, depth);
@@ -382,7 +404,6 @@ int main (int argc, char* argv[]) {
             directionhandle(&running, &restart, &snake, &food, &bonus, &score, &foodCounter, &bonusTime, window, renderer);
         }
 
-      
         if (restart) {
             reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
             restart = false;
