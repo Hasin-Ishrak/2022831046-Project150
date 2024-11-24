@@ -207,6 +207,8 @@ bool obscollision(Snake* snake){
 }
 
 void generatefood(point* food, Snake* snake, int depth){
+
+    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
     std::vector<point>freesp;
     for(int i =depth/ts;i<(height-depth)/ts;i++){
         for(int j=depth/ts;j<(width-depth)/ts;j++){
@@ -216,6 +218,12 @@ void generatefood(point* food, Snake* snake, int depth){
                if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
                     occu = 1;
                     break;
+            }
+        }
+        for(const auto& o:obs){
+            if(o.x==i && o.y==j){
+                occu=1;
+                break;
             }
         }
         if (!occu) {
@@ -233,6 +241,7 @@ void generatefood(point* food, Snake* snake, int depth){
 }
 
 void generatebonus(point* bonus, Snake* snake, int depth){
+    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
     std::vector<point>freesp;
     for(int i =depth/ts;i<(height-depth)/ts;i++){
         for(int j=depth/ts;j<(width-depth)/ts;j++){
@@ -242,6 +251,12 @@ void generatebonus(point* bonus, Snake* snake, int depth){
                if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
                     occu = 1;
                     break;
+            }
+        }
+        for(const auto& o:obs){
+            if(o.x==i && o.y==j){
+                occu=1;
+                break;
             }
         }
         if (!occu) {
@@ -325,8 +340,8 @@ int main (int argc, char* argv[]) {
     Uint32 bonusTime= 0;
 
     int depth = 10;  
-    SDL_Color wallColor = {0, 0, 0, 255};  
-    SDL_Color obstacleColor = {128, 0, 128, 255};
+    SDL_Color wallColor = {0, 51, 51, 255};  
+    SDL_Color obstacleColor = {32, 32, 32, 255};
 
     reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
 
@@ -347,7 +362,7 @@ int main (int argc, char* argv[]) {
 
                 snake.sgmnts[snake.l]=snake.sgmnts[snake.l-1];
                 snake.l++;
-                score += 5;
+                score += 10;
                 foodCounter++;
                 generatefood(&food, &snake, depth);
 
@@ -360,7 +375,7 @@ int main (int argc, char* argv[]) {
             if (bonus.x != -1) {
                 if (currentTime - bonusTime <= 5000) {
                     if (collision(snake.sgmnts[0], bonus)) {
-                        score += 10;
+                        score += 50;
                         bonus = {-1, -1};
                     }
                 } else {
@@ -376,21 +391,27 @@ int main (int argc, char* argv[]) {
             for (int i = 0; i < snake.l; i++) {
                 int radi = ts/2 +3;
                 if(i==0){
-                    SDL_Color head={255,0,0,255};
+                    SDL_Color head={51,0,102,255};
                     circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y * ts+ts/2,radi,head);
                 } 
                 else{
-                    SDL_Color body={0,0,102,255};
+                    SDL_Color body={0,51,0,255};
                     circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y *ts+ts/2,radi,body);
                 }
             }
 
             SDL_Color foodColor = {255, 0, 0, 255};
-            circle(renderer, food.x * ts + ts / 2, food.y * ts+ts/2,ts/2, foodColor);
+
+            rectngl(renderer,food.x *ts,food.y *ts,ts,ts,foodColor);
+
+           // circle(renderer, food.x * ts + ts / 2, food.y * ts+ts/2,ts/2, foodColor);
 
             if (bonus.x != -1) {
                 SDL_Color bonusColor = {255, 255, 0, 255};
-                circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts+ts/2,ts/2,bonusColor);
+
+                //circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts+ts/2,ts/2,bonusColor);
+
+                rectngl(renderer,bonus.x *ts,bonus.y *ts,ts,ts,bonusColor);
             }
 
             drawscore(renderer, score, depth);
@@ -401,11 +422,11 @@ int main (int argc, char* argv[]) {
         gameover(renderer, score);
 
         while (!restart && running) {
-            directionhandle(&running, &restart, &snake, &food, &bonus, &score, &foodCounter, &bonusTime, window, renderer);
+            directionhandle(&running,&restart,&snake,&food,&bonus,&score,&foodCounter,&bonusTime,window,renderer);
         }
 
         if (restart) {
-            reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
+            reset(&snake,&food,&bonus,&score,&foodCounter,&bonusTime,&running);
             restart = false;
         }
     }
