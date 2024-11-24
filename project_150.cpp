@@ -165,7 +165,7 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
 // creates static predifined rectangle blocks in the window 
 void obstacles(SDL_Renderer* renderer, SDL_Color color, int depth){
     
-    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
     SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
     for(const auto& i:obs){
         SDL_Rect rect = {i.x*ts,i.y*ts,ts,ts}; 
@@ -207,7 +207,7 @@ bool wallcollision(Snake* snake, int depth) {
 //checks if the snake hits any of the obstacles or not
 bool obscollision(Snake* snake){
 
-    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
     for(const auto& i:obs){
         if(collision(snake->sgmnts[0],i)){
             return 1;
@@ -215,15 +215,16 @@ bool obscollision(Snake* snake){
     }
     return 0;
 }
-
+// this functions generate the food position for the snake 
 void generatefood(point* food, Snake* snake, int depth){
-
-    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    //finds the best position for food and do not collide with any other obstacles or boundary 
+    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
     std::vector<point>freesp;
+    // stores all the free locations of the grid 
     for(int i =depth/ts;i<(height-depth)/ts;i++){
         for(int j=depth/ts;j<(width-depth)/ts;j++){
             bool occu=0;
-
+            // checks if the snake occupied any grid for the food 
             for(int k=0;k<snake->l;k++){
                if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
                     occu = 1;
@@ -241,17 +242,18 @@ void generatefood(point* food, Snake* snake, int depth){
          }
      }
   }
+  // radnomly select free grid for food
    if (!freesp.empty()) {
         int ind = rand() % freesp.size();
         *food = freesp[ind];
     } else {
-        food->x = -1;
-        food->y = -1;
+        food->x=-1;
+        food->y=-1;
     }
 }
-
+ //same as food generating function and it generates bonus after 3 food
 void generatebonus(point* bonus, Snake* snake, int depth){
-    std::vector<point>obs={{10,10},{15,15},{20,20},{30,30},{20,10}};
+    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
     std::vector<point>freesp;
     for(int i =depth/ts;i<(height-depth)/ts;i++){
         for(int j=depth/ts;j<(width-depth)/ts;j++){
@@ -275,62 +277,64 @@ void generatebonus(point* bonus, Snake* snake, int depth){
      }
   }
    if (!freesp.empty()) {
-        int ind = rand() % freesp.size();
-        *bonus = freesp[ind];
+        int ind=rand()%freesp.size();
+        *bonus=freesp[ind];
     } else {
-        bonus->x =-1;
-        bonus->y =-1;
+        bonus->x=-1;
+        bonus->y=-1;
     }
 }
 
-void reset(Snake *snake, point *food, point *bonus, int *score, int *foodCounter, Uint32 *bonusTime, bool *running){
-    snake->l=1;
-    snake->sgmnts[0] = {width/ts/2, height/ts/2};
-    snake->dx = 1;
-    snake->dy = 0;
+// after one game if user press space then this function fully reset the game as new  
+void reset(Snake *snake,point *food,point *bonus,int *score,int *foodCounter,Uint32 *bonusTime,bool *running){
+    snake->l=2; //initialize the snake length
+    snake->sgmnts[0]={width/ts/2,height/ts/2}; // head of the snake
+    snake->sgmnts[1]={width/ts/2-1,height/ts/2};// tail of the snake
+    snake->dx=1; //initial movement direction to right
+    snake->dy=0;
 
-     generatefood(food, snake, 10);
-    *bonus = {-1, -1};
-    *score = 0;
-    *foodCounter = 0;
-    *bonusTime = 0;
-    *running = 1;
+     generatefood(food,snake,10); // for the first food in the new game
+    *bonus = {-1, -1}; // because no bonus is corrently active
+    *score = 0;       // reset score
+    *foodCounter = 0; //reset food counter
+    *bonusTime = 0; //reset bonus time
+    *running = 1; 
 }
-
+// checks movement of the snake and if the user wants to resart or quit the game or not 
 void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point* bonus, int* score, int* foodCounter, 
-                        Uint32* bonusTime, SDL_Window* window, SDL_Renderer* renderer) {
+                        Uint32* bonusTime, SDL_Window* window, SDL_Renderer* renderer){
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            *run = false;
-        } else if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.sym == SDLK_UP && snake->dy == 0) {
-                snake->dx = 0;
-                snake->dy = -1;
+    while (SDL_PollEvent(&event)){
+        if (event.type==SDL_QUIT){
+            *run=0;
+        } 
+        else if (event.type==SDL_KEYDOWN){
+            if (event.key.keysym.sym==SDLK_UP && snake->dy==0){
+                snake->dx=0;
+                snake->dy=-1;
             } 
-            else if (event.key.keysym.sym == SDLK_DOWN && snake->dy == 0) {
-                snake->dx = 0;
-                snake->dy = 1;
+            else if (event.key.keysym.sym==SDLK_DOWN && snake->dy==0){
+                snake->dx=0;
+                snake->dy=1;
             } 
-            else if (event.key.keysym.sym == SDLK_LEFT && snake->dx == 0) {
-                snake->dx = -1;
-                snake->dy = 0;
+            else if (event.key.keysym.sym== SDLK_LEFT && snake->dx==0){
+                snake->dx=-1;
+                snake->dy=0;
             } 
-            else if (event.key.keysym.sym == SDLK_RIGHT && snake->dx == 0) {
-                snake->dx = 1;
-                snake->dy = 0;
+            else if (event.key.keysym.sym==SDLK_RIGHT && snake->dx==0){
+                snake->dx=1;
+                snake->dy=0;
             } 
-            else if (event.key.keysym.sym == SDLK_SPACE) {
-                *restart = true; 
-                *run = false;   
+            else if (event.key.keysym.sym==SDLK_SPACE){
+                *restart=1; 
+                *run=0;   
             } 
-            else if (event.key.keysym.sym == SDLK_LSHIFT || event.key.keysym.sym == SDLK_RSHIFT) {
-                *run = false;     
+            else if (event.key.keysym.sym==SDLK_LSHIFT || event.key.keysym.sym==SDLK_RSHIFT){
+                *run=0;     
             }
         }
     }
 }
-
 
 int main (int argc, char* argv[]) {
     SDL_Window* window=NULL;
