@@ -75,17 +75,17 @@ void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
     TTF_CloseFont(font);
 }
 
-void scorebar(SDL_Renderer* renderer, int score){
-    int scorebarheight = 40;
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 0); 
-    SDL_Rect scoreBarRect = {0, height - scorebarheight, width, scorebarheight};
-    SDL_RenderFillRect(renderer, &scoreBarRect);
+void drawscore(SDL_Renderer* renderer, int score, int depth){
 
-    SDL_Color textColor = {0, 0, 0, 255}; 
-    char scoreText[32];
-    snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
-    displayText(renderer, scoreText, 10, height - scorebarheight / 2, 24, textColor, false); 
+    SDL_Color textColor = {0, 0, 0, 255};
+    char scoretxt[32];
+    snprintf(scoretxt, sizeof(scoretxt), "Score: %d", score);
+     
+    int txtwidth =200; 
+    int x=(width/2)-(txtwidth/2);
+    int y=depth/2+7;
 
+    displayText(renderer,scoretxt,x,y,25,textColor,0);
 }
 
 void background(SDL_Renderer* renderer, int scoreBarHeight){
@@ -182,41 +182,59 @@ bool wallcollision(Snake* snake, int depth) {
     int headx = snake->sgmnts[0].x;
     int heady = snake->sgmnts[0].y;
 
-    return headx < depth / ts || headx >= (width - depth) / ts ||
-           heady < depth / ts || heady >= (height - depth) / ts;
+    return headx< depth / ts || headx>= (width - depth) / ts ||
+           heady< depth / ts || heady>= (height - depth) / ts;
 }
 
-void generateFood(point* food, Snake* snake, int depth) {
-    bool validPosition = false;
+void generatefood(point* food, Snake* snake, int depth){
+    std::vector<point>freesp;
+    for(int i =depth/ts;i<(height-depth)/ts;i++){
+        for(int j=depth/ts;j<(width-depth)/ts;j++){
+            bool occu=0;
 
-    while (!validPosition) {
-        food->x = rand() % ((width - 2 * depth) / ts) + (depth / ts);
-        food->y = rand() % ((height - 2 * depth) / ts) + (depth / ts);
-
-        validPosition = true;
-        for (int i = 0; i < snake->l; i++) {
-            if (collision(snake->sgmnts[i], *food)) {
-                validPosition = false;
-                break;
+            for(int k=0;k<snake->l;k++){
+               if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
+                    occu = 1;
+                    break;
             }
         }
+        if (!occu) {
+                freesp.push_back({i, j});
+         }
+     }
+  }
+   if (!freesp.empty()) {
+        int ind = rand() % freesp.size();
+        *food = freesp[ind];
+    } else {
+        food->x = -1;
+        food->y = -1;
     }
 }
 
-void generateBonus(point* bonus, Snake* snake, int depth) {
-    bool validPosition = false;
+void generatebonus(point* bonus, Snake* snake, int depth){
+    std::vector<point>freesp;
+    for(int i =depth/ts;i<(height-depth)/ts;i++){
+        for(int j=depth/ts;j<(width-depth)/ts;j++){
+            bool occu=0;
 
-    while (!validPosition) {
-       
-        bonus->x = rand() % ((width - 2 * depth) / ts) + (depth / ts);
-        bonus->y = rand() % ((height - 2 * depth) / ts) + (depth / ts);
-        validPosition = true;
-        for (int i = 0; i < snake->l; i++) {
-            if (collision(snake->sgmnts[i], *bonus)) {
-                validPosition = false;
-                break;
+            for(int k=0;k<snake->l;k++){
+               if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
+                    occu = 1;
+                    break;
             }
         }
+        if (!occu) {
+                freesp.push_back({i, j});
+         }
+     }
+  }
+   if (!freesp.empty()) {
+        int ind = rand() % freesp.size();
+        *bonus = freesp[ind];
+    } else {
+        bonus->x =-1;
+        bonus->y =-1;
     }
 }
 
@@ -226,7 +244,7 @@ void reset(Snake *snake, point *food, point *bonus, int *score, int *foodCounter
     snake->dx = 1;
     snake->dy = 0;
 
-     generateFood(food, snake, 10);
+     generatefood(food, snake, 10);
     *bonus = {-1, -1};
     *score = 0;
     *foodCounter = 0;
@@ -300,13 +318,15 @@ int main (int argc, char* argv[]) {
             }
 
             if (collision(snake.sgmnts[0], food)) {
+
+                snake.sgmnts[snake.l]=snake.sgmnts[snake.l-1];
                 snake.l++;
                 score += 5;
                 foodCounter++;
-                generateFood(&food, &snake, depth);
+                generatefood(&food, &snake, depth);
 
                 if ( foodCounter %3==0) {
-                    generateBonus(&bonus, &snake, depth);
+                    generatebonus(&bonus, &snake, depth);
                     bonusTime = currentTime;
                 }
             }
@@ -322,8 +342,7 @@ int main (int argc, char* argv[]) {
                 }
             }
 
-            int scorebarheight = 50;
-            background(renderer, scorebarheight);
+            background(renderer, depth);
             wall(renderer, depth, wallColor);
 
             SDL_Color snakeColor = {0, 0, 102, 255};
@@ -340,7 +359,7 @@ int main (int argc, char* argv[]) {
                 circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts + ts / 2, ts / 2,bonusColor);
             }
 
-            scorebar(renderer, score);
+            drawscore(renderer, score, depth);
             SDL_RenderPresent(renderer);
             SDL_Delay(100);
         }
@@ -362,6 +381,3 @@ int main (int argc, char* argv[]) {
     killwindow(window, renderer);
     return 0;
 }
-// fafter scoring 60 there is no food comming
-
-// want humanise food places 
