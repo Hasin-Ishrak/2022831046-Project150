@@ -111,7 +111,7 @@ void gameover(SDL_Renderer* renderer, int score) {
     snprintf(scoreMessage, sizeof(scoreMessage), "Your Score: %d", score);
     displayText(renderer, scoreMessage, width/ 2, height / 3 + 60, 36, textColor, true);
 
-    displayText(renderer, "Press 'SPACE' to Restart or 'Q' to Quit", width / 2, height / 3 + 120, 24, textColor, true);
+    displayText(renderer, "Press 'SPACE' to Restart or 'Shift' to Quit", width / 2, height / 3 + 120, 24, textColor, true);
 
     SDL_RenderPresent(renderer);
 }
@@ -262,19 +262,24 @@ void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point*
             if (event.key.keysym.sym == SDLK_UP && snake->dy == 0) {
                 snake->dx = 0;
                 snake->dy = -1;
-            } else if (event.key.keysym.sym == SDLK_DOWN && snake->dy == 0) {
+            } 
+            else if (event.key.keysym.sym == SDLK_DOWN && snake->dy == 0) {
                 snake->dx = 0;
                 snake->dy = 1;
-            } else if (event.key.keysym.sym == SDLK_LEFT && snake->dx == 0) {
+            } 
+            else if (event.key.keysym.sym == SDLK_LEFT && snake->dx == 0) {
                 snake->dx = -1;
                 snake->dy = 0;
-            } else if (event.key.keysym.sym == SDLK_RIGHT && snake->dx == 0) {
+            } 
+            else if (event.key.keysym.sym == SDLK_RIGHT && snake->dx == 0) {
                 snake->dx = 1;
                 snake->dy = 0;
-            } else if (event.key.keysym.sym == SDLK_SPACE) {
+            } 
+            else if (event.key.keysym.sym == SDLK_SPACE) {
                 *restart = true; 
                 *run = false;   
-            } else if (event.key.keysym.sym == SDLK_q) {
+            } 
+            else if (event.key.keysym.sym == SDLK_LSHIFT || event.key.keysym.sym == SDLK_RSHIFT) {
                 *run = false;     
             }
         }
@@ -347,8 +352,15 @@ int main (int argc, char* argv[]) {
 
             SDL_Color snakeColor = {0, 0, 102, 255};
             for (int i = 0; i < snake.l; i++) {
-                int radius = (i == 0) ? ts / 2 : ts / 2 - (i * 2 / snake.l);
-                circle(renderer, snake.sgmnts[i].x * ts + ts / 2, snake.sgmnts[i].y * ts + ts / 2, radius, snakeColor);
+                int radi = ts/2;
+                if(i==0){
+                    SDL_Color head={255,0,0,255};
+                    circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y * ts+ts/2,radi,head);
+                } 
+                else{
+                    SDL_Color body={0,0,102,255};
+                    circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y *ts+ts/2,radi,body);
+                }
             }
 
             SDL_Color foodColor = {255, 0, 0, 255};
@@ -376,7 +388,6 @@ int main (int argc, char* argv[]) {
             restart = false;
         }
     }
-
     
     killwindow(window, renderer);
     return 0;
