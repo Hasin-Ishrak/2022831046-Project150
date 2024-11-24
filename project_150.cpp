@@ -179,11 +179,11 @@ bool selfcollision(Snake* snake){
 }
 
 bool wallcollision(Snake* snake, int depth) {
-    int headx = snake->sgmnts[0].x;
-    int heady = snake->sgmnts[0].y;
+    int headx= snake->sgmnts[0].x;
+    int heady= snake->sgmnts[0].y;
 
-    return headx< depth / ts || headx>= (width - depth) / ts ||
-           heady< depth / ts || heady>= (height - depth) / ts;
+    return headx< depth/ts || headx>=(width-depth)/ts ||
+           heady< depth/ts || heady>=(height-depth)/ts;
 }
 
 void generatefood(point* food, Snake* snake, int depth){
