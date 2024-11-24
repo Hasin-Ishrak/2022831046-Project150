@@ -7,6 +7,8 @@
 #define ts 25
 #define ml 225
 
+int highscore=0;
+
 typedef struct {
     int x, y;
 } point;
@@ -108,7 +110,7 @@ void background(SDL_Renderer* renderer, int scoreBarHeight){
 
 // to show game over at the last of the game
 void gameover(SDL_Renderer* renderer, int score) {
-    SDL_SetRenderDrawColor(renderer,0,50,102, 255); 
+    SDL_SetRenderDrawColor(renderer,0,0,50, 255); 
     SDL_RenderClear(renderer);
 
     SDL_Color textColor = {255, 255, 255, 255}; 
@@ -119,8 +121,12 @@ void gameover(SDL_Renderer* renderer, int score) {
     snprintf(scoreMessage, sizeof(scoreMessage), "Your Score: %d", score);
     // horizontally centered and under the game over
     displayText(renderer,scoreMessage, width/ 2,height/3 +60,35,textColor,1);
+    // to track high score and to show high score at the game over window
+    char highestScoreMessage[64];
+    snprintf(highestScoreMessage, sizeof(highestScoreMessage), "Highest Score: %d", highscore);
+    displayText(renderer, highestScoreMessage, width/2,height/3 +120,30, textColor, 1);
     // to show ending message and centered the text 120 pixel below game over 
-    displayText(renderer,"Press 'SPACE' to Restart or 'Shift' to Quit",width/2,height/3+120, 25, textColor,1);
+    displayText(renderer,"Press 'SPACE' to Restart or 'Shift' to Quit",width/2,height/3+180, 25, textColor,1);
 
     SDL_RenderPresent(renderer);
 }
@@ -336,17 +342,17 @@ void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point*
     }
 }
 
-int main (int argc, char* argv[]) {
+int main (int argc, char* argv[]){
     SDL_Window* window=NULL;
     SDL_Renderer* renderer=NULL;
 
-    if (!init(&window, &renderer)) {
+    if (!init(&window, &renderer)){
         return 1;
     }
 
     srand(time(NULL));
-    bool running = true;
-    bool restart = false;
+    bool running=1;
+    bool restart=0;
 
     Snake snake;
     point food,bonus;
@@ -357,83 +363,91 @@ int main (int argc, char* argv[]) {
     SDL_Color wallColor = {0, 51, 51, 255};  
     SDL_Color obstacleColor = {32, 32, 32, 255};
 
-    reset(&snake, &food, &bonus, &score, &foodCounter, &bonusTime, &running);
-
+    reset(&snake,&food,&bonus,&score,&foodCounter,&bonusTime,&running);
+   
+   //outer loop keep the game running unless player quits 
+    //inner loop for single game until the player losses or restart
     while (running) {
         while (running) {
-            Uint32 currentTime = SDL_GetTicks();
+            Uint32 currentTime = SDL_GetTicks(); //current time in millisecond 
 
-            
-            directionhandle(&running, &restart, &snake, &food, &bonus, &score, &foodCounter, &bonusTime, window, renderer);
+            directionhandle(&running,&restart,&snake,&food,&bonus,&score,&foodCounter,&bonusTime,window,renderer);
 
             movingsnk(&snake);
 
             if (wallcollision(&snake,depth) || selfcollision(&snake) || obscollision(&snake)) {
                 break; 
             }
-
-            if (collision(snake.sgmnts[0], food)) {
-
+            // checks if the head of the snake i collide with the food or not 
+            //and increases the length and generate food and bonus for logic
+            if (collision(snake.sgmnts[0], food)){
                 snake.sgmnts[snake.l]=snake.sgmnts[snake.l-1];
                 snake.l++;
                 score += 10;
                 foodCounter++;
-                generatefood(&food, &snake, depth);
+                generatefood(&food,&snake,depth);
 
-                if ( foodCounter %3==0) {
-                    generatebonus(&bonus, &snake, depth);
-                    bonusTime = currentTime;
+                if (foodCounter%3==0) {
+                    generatebonus(&bonus,&snake,depth);
+                    bonusTime=currentTime;
                 }
             }
 
-            if (bonus.x != -1) {
-                if (currentTime - bonusTime <= 5000) {
-                    if (collision(snake.sgmnts[0], bonus)) {
-                        score += 50;
-                        bonus = {-1, -1};
+            if (bonus.x!=-1) {
+                //checks if the bonus is for 5 seconds  since it comes 
+                if (currentTime-bonusTime<=5000){
+                    if (collision(snake.sgmnts[0],bonus)){
+                        score+=50;
+                        bonus={-1, -1};
                     }
-                } else {
-                    bonus = {-1, -1};
+                } 
+                // if bonus exceeded the time then it will disappear
+                else 
+                {
+                    bonus ={-1, -1};
                 }
             }
-
+            // render backgound ,wall and obstacles of the game
             background(renderer, depth);
             wall(renderer, depth, wallColor);
             obstacles(renderer, obstacleColor, depth);
-
-            SDL_Color snakeColor = {0, 0, 102, 255};
-            for (int i = 0; i < snake.l; i++) {
-                int radi = ts/2 +3;
+           // making the snake 
+            SDL_Color snakeColor={0,0,105,255};
+            for (int i = 0;i<snake.l;i++){
+                int radi=ts/2+3; // ensures the circle fits in the grid
+                //i=0 is the head of the snake and it has different color then the body
                 if(i==0){
-                    SDL_Color head={51,0,102,255};
-                    circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y * ts+ts/2,radi,head);
+                    SDL_Color head={75,0,155,255};
+                    circle(renderer,snake.sgmnts[i].x*ts+ts/2,snake.sgmnts[i].y*ts+ts/2,radi,head);
                 } 
                 else{
-                    SDL_Color body={0,51,0,255};
-                    circle(renderer,snake.sgmnts[i].x * ts+ts/2,snake.sgmnts[i].y *ts+ts/2,radi,body);
+                    SDL_Color body={48,95,0,255};
+                    circle(renderer,snake.sgmnts[i].x*ts+ts/2,snake.sgmnts[i].y*ts+ts/2,radi,body);
                 }
             }
 
-            SDL_Color foodColor = {255, 0, 0, 255};
+            SDL_Color foodColor = {255,0,0,255};
 
             rectngl(renderer,food.x *ts,food.y *ts,ts,ts,foodColor);
 
-           // circle(renderer, food.x * ts + ts / 2, food.y * ts+ts/2,ts/2, foodColor);
+           // circle(renderer,food.x*ts+ts/2,food.y*ts+ts/2,ts/2,foodColor);
 
-            if (bonus.x != -1) {
-                SDL_Color bonusColor = {255, 255, 0, 255};
+            if (bonus.x !=-1) {
+                SDL_Color bonusColor = {255,255,0,255};
 
-                //circle(renderer, bonus.x * ts + ts / 2,bonus.y * ts+ts/2,ts/2,bonusColor);
+                //circle(renderer,bonus.x*ts+ts/2,bonus.y*ts+ts/2,ts/2,bonusColor);
 
-                rectngl(renderer,bonus.x *ts,bonus.y *ts,ts,ts,bonusColor);
+                rectngl(renderer,bonus.x*ts,bonus.y*ts,ts,ts,bonusColor);
             }
 
             drawscore(renderer, score, depth);
             SDL_RenderPresent(renderer);
             SDL_Delay(100);
         }
-
-        gameover(renderer, score);
+        if(score>highscore){
+            highscore=score;
+        }
+        gameover(renderer,score);
 
         while (!restart && running) {
             directionhandle(&running,&restart,&snake,&food,&bonus,&score,&foodCounter,&bonusTime,window,renderer);
@@ -441,10 +455,10 @@ int main (int argc, char* argv[]) {
 
         if (restart) {
             reset(&snake,&food,&bonus,&score,&foodCounter,&bonusTime,&running);
-            restart = false;
+            restart=0;
         }
     }
     
-    killwindow(window, renderer);
+    killwindow(window,renderer);
     return 0;
 }
