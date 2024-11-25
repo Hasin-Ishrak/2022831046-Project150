@@ -71,8 +71,8 @@ void killwindow(SDL_Window* window, SDL_Renderer* renderer) {
     // x ,y axis and w ,h height and width which is calculated from the surface
     //center ensures that is at center and half of w and half of h
     if (center) {
-        dstRect.x= x-surface->w/ 2;
-        dstRect.y= y-surface->h/ 2;
+        dstRect.x= x-surface->w/2;
+        dstRect.y= y-surface->h/2;
     }
 
     SDL_RenderCopy(renderer, texture, NULL, &dstRect);
@@ -120,7 +120,7 @@ void gameover(SDL_Renderer* renderer, int score) {
     char scoreMessage[64];
     snprintf(scoreMessage, sizeof(scoreMessage), "Your Score: %d", score);
     // horizontally centered and under the game over
-    displayText(renderer,scoreMessage, width/ 2,height/3 +60,35,textColor,1);
+    displayText(renderer,scoreMessage, width/2,height/3+60,35,textColor,1);
     // to track high score and to show high score at the game over window
     char highestScoreMessage[64];
     snprintf(highestScoreMessage, sizeof(highestScoreMessage), "Highest Score: %d", highscore);
@@ -171,7 +171,7 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
 // creates static predifined rectangle blocks in the window 
 void obstacles(SDL_Renderer* renderer, SDL_Color color, int depth){
     
-    std::vector<point>obs={{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
+    std::vector<point>obs={{10,10},{11,10},{12,10},{13,10},{14,10}};
     SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
     for(const auto& i:obs){
         SDL_Rect rect = {i.x*ts,i.y*ts,ts,ts}; 
@@ -213,7 +213,7 @@ bool wallcollision(Snake* snake, int depth) {
 //checks if the snake hits any of the obstacles or not
 bool obscollision(Snake* snake){
 
-    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
+    std::vector<point>obs={{10,10},{11,10},{12,10},{13,10},{14,10}};
     for(const auto& i:obs){
         if(collision(snake->sgmnts[0],i)){
             return 1;
@@ -221,10 +221,10 @@ bool obscollision(Snake* snake){
     }
     return 0;
 }
-// this functions generate the food position for the snake 
-void generatefood(point* food, Snake* snake, int depth){
+// this functions generate the food and bonus position for the snake 
+void foodandbonus(point* item, Snake* snake, int depth){
     //finds the best position for food and do not collide with any other obstacles or boundary 
-    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
+    std::vector<point>obs= {{10,10},{11,10},{12,10},{13,10},{14,10}};
     std::vector<point>freesp;
     // stores all the free locations of the grid 
     for(int i =depth/ts;i<(height-depth)/ts;i++){
@@ -232,7 +232,7 @@ void generatefood(point* food, Snake* snake, int depth){
             bool occu=0;
             // checks if the snake occupied any grid for the food 
             for(int k=0;k<snake->l;k++){
-               if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
+               if (snake->sgmnts[k].x==i && snake->sgmnts[k].y== j){
                     occu = 1;
                     break;
             }
@@ -244,50 +244,17 @@ void generatefood(point* food, Snake* snake, int depth){
             }
         }
         if (!occu) {
-                freesp.push_back({i, j});
+                freesp.push_back({i,j});
          }
      }
   }
   // radnomly select free grid for food
    if (!freesp.empty()) {
         int ind = rand() % freesp.size();
-        *food = freesp[ind];
+        *item = freesp[ind];
     } else {
-        food->x=-1;
-        food->y=-1;
-    }
-}
- //same as food generating function and it generates bonus after 3 food
-void generatebonus(point* bonus, Snake* snake, int depth){
-    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
-    std::vector<point>freesp;
-    for(int i =depth/ts;i<(height-depth)/ts;i++){
-        for(int j=depth/ts;j<(width-depth)/ts;j++){
-            bool occu=0;
-
-            for(int k=0;k<snake->l;k++){
-               if (snake->sgmnts[i].x == i && snake->sgmnts[i].y == j) {
-                    occu = 1;
-                    break;
-            }
-        }
-        for(const auto& o:obs){
-            if(o.x==i && o.y==j){
-                occu=1;
-                break;
-            }
-        }
-        if (!occu) {
-                freesp.push_back({i, j});
-         }
-     }
-  }
-   if (!freesp.empty()) {
-        int ind=rand()%freesp.size();
-        *bonus=freesp[ind];
-    } else {
-        bonus->x=-1;
-        bonus->y=-1;
+        item->x=-1;
+        item->y=-1;
     }
 }
 
@@ -299,12 +266,12 @@ void reset(Snake *snake,point *food,point *bonus,int *score,int *foodCounter,Uin
     snake->dx=1; //initial movement direction to right
     snake->dy=0;
 
-     generatefood(food,snake,10); // for the first food in the new game
-    *bonus = {-1, -1}; // because no bonus is corrently active
-    *score = 0;       // reset score
-    *foodCounter = 0; //reset food counter
-    *bonusTime = 0; //reset bonus time
-    *running = 1; 
+     foodandbonus(food,snake,10); // for the first food in the new game
+    *bonus={-1 -1}; // because no bonus is corrently active
+    *score= 0;       // reset score
+    *foodCounter=0; //reset food counter
+    *bonusTime=0; //reset bonus time
+    *running=1; 
 }
 // checks movement of the snake and if the user wants to resart or quit the game or not 
 void directionhandle(bool* run, bool* restart, Snake* snake, point* food, point* bonus, int* score, int* foodCounter, 
@@ -360,8 +327,8 @@ int main (int argc, char* argv[]){
     Uint32 bonusTime= 0;
 
     int depth = 10;  
-    SDL_Color wallColor = {0, 51, 51, 255};  
-    SDL_Color obstacleColor = {32, 32, 32, 255};
+    SDL_Color wallColor={0,51,51,255};  
+    SDL_Color obstacleColor={32,32,32,255};
 
     reset(&snake,&food,&bonus,&score,&foodCounter,&bonusTime,&running);
    
@@ -369,7 +336,7 @@ int main (int argc, char* argv[]){
     //inner loop for single game until the player losses or restart
     while (running) {
         while (running) {
-            Uint32 currentTime = SDL_GetTicks(); //current time in millisecond 
+            Uint32 currentTime=SDL_GetTicks(); //current time in millisecond 
 
             directionhandle(&running,&restart,&snake,&food,&bonus,&score,&foodCounter,&bonusTime,window,renderer);
 
@@ -385,26 +352,26 @@ int main (int argc, char* argv[]){
                 snake.l++;
                 score += 10;
                 foodCounter++;
-                generatefood(&food,&snake,depth);
+                foodandbonus(&food,&snake,depth);
 
                 if (foodCounter%3==0) {
-                    generatebonus(&bonus,&snake,depth);
+                    foodandbonus(&bonus,&snake,depth);
                     bonusTime=currentTime;
                 }
             }
 
             if (bonus.x!=-1) {
-                //checks if the bonus is for 5 seconds  since it comes 
+                //checks if the bonus is for 5 sec  since it comes 
                 if (currentTime-bonusTime<=5000){
                     if (collision(snake.sgmnts[0],bonus)){
                         score+=50;
-                        bonus={-1, -1};
+                        bonus={-1,-1};
                     }
                 } 
-                // if bonus exceeded the time then it will disappear
+                // if bonus exceeded the time then it will disappear after 5 sec
                 else 
                 {
-                    bonus ={-1, -1};
+                    bonus ={-1,-1};
                 }
             }
             // render backgound ,wall and obstacles of the game
@@ -440,7 +407,7 @@ int main (int argc, char* argv[]){
                 rectngl(renderer,bonus.x*ts,bonus.y*ts,ts,ts,bonusColor);
             }
 
-            drawscore(renderer, score, depth);
+            drawscore(renderer,score,depth);
             SDL_RenderPresent(renderer);
             SDL_Delay(100);
         }

@@ -9,7 +9,7 @@
 
 ## Description
 
-A classic Snake Game implemented in C/C++ using the SDL2 library. The game involves controlling a snake to eat food, which makes the snake grow longer and increase the score. The objective is to avoid colliding with the walls , the snake itself or with the obstacles(which are fixed).
+A classic Snake Game implemented in C/C++ using the SDL2 library. The game involves controlling a snake to eat food, which makes the snake grow longer and increase the score. The objective is to avoid colliding with the walls , the snake itself or with the obstaclebar(which is fixed).
 
 ## Control
 
