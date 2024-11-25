@@ -43,7 +43,7 @@ A classic Snake Game implemented in C/C++ using the SDL2 library. The game invol
 
 - SDL2 Library for providing the tools to create this game.
 - SDl_ttf
-- stack overflow
+- Stack overflow
 - Geeks for geeks
 - Lazyfoo https://lazyfoo.net/tutorials/SDL/16_true_type_fonts/index.php
 - Pikuma (Youtube) -https://www.youtube.com/watch?v=XfZ6WrV5Z7Y&t=4517s
