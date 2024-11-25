@@ -171,7 +171,7 @@ void circle(SDL_Renderer* renderer,int xx,int yy,int radi,SDL_Color color){
 // creates static predifined rectangle blocks in the window 
 void obstacles(SDL_Renderer* renderer, SDL_Color color, int depth){
     
-    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
+    std::vector<point>obs={{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
     SDL_SetRenderDrawColor(renderer,color.r,color.g,color.b,color.a);
     for(const auto& i:obs){
         SDL_Rect rect = {i.x*ts,i.y*ts,ts,ts}; 
@@ -213,7 +213,7 @@ bool wallcollision(Snake* snake, int depth) {
 //checks if the snake hits any of the obstacles or not
 bool obscollision(Snake* snake){
 
-    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
+    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
     for(const auto& i:obs){
         if(collision(snake->sgmnts[0],i)){
             return 1;
@@ -224,7 +224,7 @@ bool obscollision(Snake* snake){
 // this functions generate the food position for the snake 
 void generatefood(point* food, Snake* snake, int depth){
     //finds the best position for food and do not collide with any other obstacles or boundary 
-    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
+    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
     std::vector<point>freesp;
     // stores all the free locations of the grid 
     for(int i =depth/ts;i<(height-depth)/ts;i++){
@@ -259,7 +259,7 @@ void generatefood(point* food, Snake* snake, int depth){
 }
  //same as food generating function and it generates bonus after 3 food
 void generatebonus(point* bonus, Snake* snake, int depth){
-    std::vector<point>obs={{10,10},{15,15},{20,20},{15,20},{20,10}};
+    std::vector<point>obs= {{10, 10}, {11, 10}, {12, 10}, {13, 10}, {14, 10}};
     std::vector<point>freesp;
     for(int i =depth/ts;i<(height-depth)/ts;i++){
         for(int j=depth/ts;j<(width-depth)/ts;j++){
